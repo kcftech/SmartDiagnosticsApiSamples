@@ -39,7 +39,7 @@ def export_burst_data(startDateTimeString, endDateTimeString, apiKey, localExpor
 
     # Send the request to the web API.
     httpResponse = request.urlopen(request.Request(
-        f'https://sdstage.kcftech.com/public/exports/burstData?apiKey={apiKey}',
+        f'https://sd.kcftech.com/public/exports/burstData?apiKey={apiKey}',
         # Convert the requestData dictionary to a JSON string that is represented as an array of bytes
         # that is suitable for sending in this http request.
         data = json.dumps(requestData).encode('utf-8'),
@@ -100,7 +100,7 @@ def export_indicator_data(startDateTimeString, endDateTimeString, apiKey, localE
 
     # Send the request to the web API.
     httpResponse = request.urlopen(request.Request(
-        f'https://sdstage.kcftech.com/public/exports/indicatorData?apiKey={apiKey}',
+        f'https://sd.kcftech.com/public/exports/indicatorData?apiKey={apiKey}',
         # Convert the requestData dictionary to a JSON string that is represented as an array of bytes
         # that is suitable for sending in this http request.
         data = json.dumps(requestData).encode('utf-8'),
@@ -147,7 +147,7 @@ def wait_for_export_completion(apiKey, exportId):
 def get_export_status_result(exportId, apiKey):
     # Send the status request to the web API.
     httpResponse = request.urlopen(request.Request(
-        f'https://sdstage.kcftech.com/public/exports/{exportId}/status?apiKey={apiKey}',
+        f'https://sd.kcftech.com/public/exports/{exportId}/status?apiKey={apiKey}',
         headers = { 'content-type': 'application/json', 'Accept': 'application/json' }
     ))
     # Read the export status JSON string from the http response.

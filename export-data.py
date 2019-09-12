@@ -7,25 +7,22 @@ import json
 import time
 import os
 import zipfile
+import argparse
 
 # Initiates a burst data export.
-#  - startDateTimeString: Indicates the start date within which export data will be included.
-#           This string is expected to be in the format 'YYYY-MM-DD HH:mm:ssT±HHMM' (see datetime_to_millis
-#           method for more information).
-#  - endDateTimeString: Indicates the end date within which export data will be included.
-#           This string is expected to be in the format 'YYYY-MM-DD HH:mm:ssT±HHMM' (see datetime_to_millis
-#           method for more information).
+#  - startMillis: Indicates the start date, represented as milliseconds from the unix epoch,
+#                 within which export data will be included.
+#  - endMillis: Indicates the end date, represented as milliseconds from the unix epoch,
+#                 within which export data will be included.
 #  - apiKey: The api key for the account that contains the data to be exported.
 #  - localExportFolderPath: A path on the local file system where exported data will be placed
-#           upon export completion.
-def export_burst_data(startDateTimeString, endDateTimeString, apiKey, localExportFolderPath):
-    print(f'Exporting burst data between {startDateTimeString} and {endDateTimeString}.')
+#                 upon export completion.
+def export_burst_data(startMillis, endMillis, apiKey, localExportFolderPath):
+    print(f'Exporting burst data between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
     
     requestData = {
-        # Unix timestamp represented as milliseconds from the Unix epoch.
-        "StartTime": datetime_to_millis(startDateTimeString),
-        # Unix timestamp represented as milliseconds from the Unix epoch.
-        "EndTime": datetime_to_millis(endDateTimeString),
+        "StartTime": startMillis,
+        "EndTime": endMillis,
         # Specific node serial numbers for which export data will be included in the export. If this is
         # empty, the export will include all nodes for the account associated with the API key.
         "NodeSerialNumbers": [],
@@ -50,27 +47,23 @@ def export_burst_data(startDateTimeString, endDateTimeString, apiKey, localExpor
     exportStatusResult = wait_for_export_completion(apiKey, exportId)
     # Build the full path to where the file should be output locally. The filename will include
     # the time range of the export request.
-    exportFilePath = os.path.join(localExportFolderPath, f'{get_filename_friendly_date(startDateTimeString)}--{get_filename_friendly_date(endDateTimeString)}_burst.zip')
+    exportFilePath = os.path.join(localExportFolderPath, f'{get_filename_friendly_date(startMillis)}--{get_filename_friendly_date(endMillis)}_burst.zip')
     handle_export_result(exportStatusResult, exportFilePath)
 
 # Initiates an indicator data export.
-#  - startDateTimeString: Indicates the start date within which export data will be included.
-#           This string is expected to be in the format 'YYYY-MM-DD HH:mm:ssT±HHMM' (see datetime_to_millis
-#           method for more information).
-#  - endDateTimeString: Indicates the end date within which export data will be included.
-#           This string is expected to be in the format 'YYYY-MM-DD HH:mm:ssT±HHMM' (see datetime_to_millis
-#           method for more information).
+#  - startMillis: Indicates the start date, represented as milliseconds from the unix epoch,
+#                 within which export data will be included.
+#  - endMillis: Indicates the end date, represented as milliseconds from the unix epoch,
+#                 within which export data will be included.
 #  - apiKey: The api key for the account that contains the data to be exported.
 #  - localExportFolderPath: A path on the local file system where exported data will be placed
 #           upon export completion.
-def export_indicator_data(startDateTimeString, endDateTimeString, apiKey, localExportFolderPath):
-    print(f'Exporting indicator data between {startDateTimeString} and {endDateTimeString}.')
+def export_indicator_data(startMillis, endMillis, apiKey, localExportFolderPath):
+    print(f'Exporting indicator data between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
 
     requestData = {
-        # Unix timestamp represented as milliseconds from the Unix epoch.
-        "StartTime": datetime_to_millis(startDateTimeString),
-        # Unix timestamp represented as milliseconds from the Unix epoch.
-        "EndTime": datetime_to_millis(endDateTimeString),
+        "StartTime": startMillis,
+        "EndTime": endMillis,
         # Set to True to include the parent group hierarchy ids and names in the first two columns
         # of the exported data set files. Default value is False.
         "EmbedMetadata": False,
@@ -111,13 +104,8 @@ def export_indicator_data(startDateTimeString, endDateTimeString, apiKey, localE
     exportStatusResult = wait_for_export_completion(apiKey, exportId)
     # Build the full path to where the file should be output locally. The filename will include
     # the time range of the export request.
-    exportFilePath = os.path.join(localExportFolderPath, f'{get_filename_friendly_date(startDateTimeString)}--{get_filename_friendly_date(endDateTimeString)}_indicator.zip')
+    exportFilePath = os.path.join(localExportFolderPath, f'{get_filename_friendly_date(startMillis)}--{get_filename_friendly_date(endMillis)}_indicator.zip')
     handle_export_result(exportStatusResult, exportFilePath)
-
-# Convert the input dateTime string (something like '2019-07-20 06:12:42T-0400') to
-# a format that is allowed in a filename (something like '2019-07-20_06-12-42-0400')
-def get_filename_friendly_date(dateTimeString):
-    return f'{dateTimeString.replace(":", "-").replace(" ", "_")}'
 
 # Polls the export status API until the export has completed. Once the export has completed,
 # this method returns an object describing whether the final state of the export process. Refer
@@ -176,37 +164,52 @@ def handle_export_result(exportStatusResult, localExportFilePath):
         else:
             print(f'Something went wrong with the export: "{exportStatusResult["error"]}"')
 
-# Convenience method to convert a date-time string to a unix timestamp in milliseconds.
-# Accepts a date-time string of the format 'YYYY-MM-DD HH:mm:ssT±HHMM, where
-#	
-#    YYYY = the 4-digit year
-#    MM = the 2-digit month
-#    DD = the 2-digit day of the month
-#    HH = the 2-digit hour of the day
-#    mm = the 2-digit minute of the hour
-#    ss = the 2-digit seconds in the minute
-#    ±HHMM = the timezone offset from UTC (e.g. -0400, +1030, +0000)
-def datetime_to_millis(dateTimeString):
-    dateTime = datetime.strptime(dateTimeString, '%Y-%m-%d %H:%M:%ST%z')
-    return (int)(dateTime.timestamp() * 1000)
+
+def datetime_to_millis(dateTime):
+    return dateTime.timestamp() * 1000
+
+def datetime_string_to_millis(dateTimeString):
+    dateTime = datetime.strptime(dateTimeString, '%Y-%m-%d %H:%M:%S')
+    return datetime_to_millis(dateTime)
+
+def millis_to_datetime(millis):
+    return datetime.fromtimestamp(millis / 1000)
+
+# Convert the input millis to a format that is allowed in a filename (something like '2019-07-20_06-12-42')
+def get_filename_friendly_date(millis):
+    dt = millis_to_datetime(millis)
+    return dt.strftime('%Y-%m-%d %H-%M-%S')
 
 
-#
-# IMPORTANT - Change this value to the API key for your account.
-#
-apiKey = 'YOUR_API_KEY'
 
-# Change the start and end date to whatever time frame the included export data should occur between.
-# This sample code uses a human-readable date-time format here and converts these date-time strings
-# to Unix milliseconds timestamps that the export API requires.
-startDateTimeString = '2019-08-07 18:00:00T-0400'
-endDateTimeString = '2019-08-07 19:00:00T-0400'
+ap = argparse.ArgumentParser()
+ap.add_argument('-a', '--apikey', required = True,
+   help = 'Your account API Key.')
+ap.add_argument('-s', '--start', required = True,
+   help = 'The start date/time of the export range in the format "YYYY-MM-DD HH:mm:ss" (e.g. "2018-09-25 00:00:00").')
+ap.add_argument('-e', '--end', required = False,
+   help = 'The end date/time of the export range in the format "YYYY-MM-DD HH:mm:ss" (e.g. "2018-09-25 00:00:00"). Defaults to the current date/time if omitted.')
+ap.add_argument('-i', '--indicator', required = False, action='store_true',
+   help = 'Specify this flag to include indicator data in the export.')
+ap.add_argument('-b', '--burst', required = False, action='store_true',
+   help = 'Specify this flag to include burst data in the export.')
+args = vars(ap.parse_args())
+if not args['burst'] and not args['indicator']:
+    ap.error('You must specify at least one type of export (i.e. burst or indicator).')
 
-# Change this to whatever output folder path the exported files should be placed.
-# If this isn't changed, the files will be output to the current folder where this
-# script is being run.
-localExportFolderPath = '.'
+apiKey = args['apikey']
+startMillis = datetime_string_to_millis(args['start'])
+endMillis = datetime_to_millis(datetime.utcnow())
+includeIndicator = args['indicator']
+includeBurst = args['burst']
 
-# Export both the indicator data and the burst data for the specified time frame.
-export_indicator_data(startDateTimeString, endDateTimeString, apiKey, localExportFolderPath)
-export_burst_data(startDateTimeString, endDateTimeString, apiKey, localExportFolderPath)
+if args['end'] is not None:
+    endMillis = datetime_string_to_millis(args['end'])
+    
+# Defaults to outputting the exported files to the current path where this script is run.
+localDataExportFolderPath = '.'
+
+if includeIndicator:
+    export_indicator_data(startMillis, endMillis, apiKey, localDataExportFolderPath)
+if includeBurst:
+    export_burst_data(startMillis, endMillis, apiKey, localDataExportFolderPath)

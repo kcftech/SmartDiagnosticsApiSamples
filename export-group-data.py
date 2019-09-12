@@ -6,10 +6,10 @@ from pathlib import Path
 import json
 import time
 import os
-import zipfile
 import argparse
 
-# Initiates a burst data export.
+# Initiates a burst data group export.
+#  - groupId: The group to include in the export.
 #  - startMillis: Indicates the start date, represented as milliseconds from the unix epoch,
 #                 within which export data will be included.
 #  - endMillis: Indicates the end date, represented as milliseconds from the unix epoch,
@@ -17,15 +17,12 @@ import argparse
 #  - apiKey: The api key for the account that contains the data to be exported.
 #  - localExportFolderPath: A path on the local file system where exported data will be placed
 #                 upon export completion.
-def export_burst_data(startMillis, endMillis, apiKey, localExportFolderPath):
-    print(f'Exporting burst data between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
+def export_group_burst_data(groupId, startMillis, endMillis, apiKey, localExportFolderPath):
+    print(f'Exporting burst data for group {groupId} between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
     
     requestData = {
         "StartTime": startMillis,
         "EndTime": endMillis,
-        # Specific node serial numbers for which export data will be included in the export. If this is
-        # empty, the export will include all nodes for the account associated with the API key.
-        "NodeSerialNumbers": [],
         # Number of chronological burst samples, starting from earliest date, to include in the export
         # within the specified time range. If set to 0, all samples in the time range are included.
         "SampleSize": 0,
@@ -36,7 +33,7 @@ def export_burst_data(startMillis, endMillis, apiKey, localExportFolderPath):
 
     # Send the request to the web API.
     httpResponse = request.urlopen(request.Request(
-        f'https://sd.kcftech.com/public/exports/burstData?apiKey={apiKey}',
+        f'https://sd.kcftech.com/public/exports/group/{groupId}/burstData?apiKey={apiKey}',
         # Convert the requestData dictionary to a JSON string that is represented as an array of bytes
         # that is suitable for sending in this http request.
         data = json.dumps(requestData).encode('utf-8'),
@@ -50,7 +47,8 @@ def export_burst_data(startMillis, endMillis, apiKey, localExportFolderPath):
     exportFilePath = os.path.join(localExportFolderPath, f'{get_filename_friendly_date(startMillis)}--{get_filename_friendly_date(endMillis)}_burst.zip')
     handle_export_result(exportStatusResult, exportFilePath)
 
-# Initiates an indicator data export.
+# Initiates an indicator group data export.
+#  - groupId: The group to include in the export.
 #  - startMillis: Indicates the start date, represented as milliseconds from the unix epoch,
 #                 within which export data will be included.
 #  - endMillis: Indicates the end date, represented as milliseconds from the unix epoch,
@@ -58,8 +56,8 @@ def export_burst_data(startMillis, endMillis, apiKey, localExportFolderPath):
 #  - apiKey: The api key for the account that contains the data to be exported.
 #  - localExportFolderPath: A path on the local file system where exported data will be placed
 #           upon export completion.
-def export_indicator_data(startMillis, endMillis, apiKey, localExportFolderPath):
-    print(f'Exporting indicator data between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
+def export_group_indicator_data(groupId, startMillis, endMillis, apiKey, localExportFolderPath):
+    print(f'Exporting indicator data for group {groupId} between "{get_filename_friendly_date(startMillis)}" UTC and "{get_filename_friendly_date(endMillis)}" UTC')
 
     requestData = {
         "StartTime": startMillis,
@@ -67,9 +65,6 @@ def export_indicator_data(startMillis, endMillis, apiKey, localExportFolderPath)
         # Set to True to include the parent group hierarchy ids and names in the first two columns
         # of the exported data set files. Default value is False.
         "EmbedMetadata": False,
-        # Specific indicator ids for which data will be included in the export. If this is empty (default),
-        # the request will include all indicators for the account associated with the API key.
-        "IndicatorIds": [],
         # Specific indicator types that should be either included or excluded from the exported data 
         # set files. If not specified, all indicator types are included. Valid types are:
         #
@@ -93,7 +88,7 @@ def export_indicator_data(startMillis, endMillis, apiKey, localExportFolderPath)
 
     # Send the request to the web API.
     httpResponse = request.urlopen(request.Request(
-        f'https://sd.kcftech.com/public/exports/indicatorData?apiKey={apiKey}',
+        f'https://sd.kcftech.com/public/exports/group/{groupId}/indicatorData?apiKey={apiKey}',
         # Convert the requestData dictionary to a JSON string that is represented as an array of bytes
         # that is suitable for sending in this http request.
         data = json.dumps(requestData).encode('utf-8'),
@@ -149,14 +144,6 @@ def handle_export_result(exportStatusResult, localExportFilePath):
         # Download the export file to the local exportFilePath.
         request.urlretrieve(exportStatusResult['downloadUrl'], localExportFilePath)
         print(f'Export file downloaded to {localExportFilePath}')
-
-        # Extract the zip file.
-        with zipfile.ZipFile(localExportFilePath, 'r') as zip_ref:
-            exportParentFolderPath = os.path.abspath(os.path.join(localExportFilePath, os.pardir))
-            filenameWithoutExtension = Path(localExportFilePath).stem
-            customOutputFolderPath = os.path.join(exportParentFolderPath, filenameWithoutExtension)
-            zip_ref.extractall(customOutputFolderPath)
-            print(f'Export content was extracted to {customOutputFolderPath}')
     else:
         exportErrorText = exportStatusResult["error"]
         if exportErrorText == 'No data to export.':
@@ -164,6 +151,13 @@ def handle_export_result(exportStatusResult, localExportFilePath):
         else:
             print(f'Something went wrong with the export: "{exportStatusResult["error"]}"')
 
+def winapi_path(dos_path, encoding = None):
+    path = os.path.abspath(dos_path)
+    if path.startswith("\\\\"):
+        path = "\\\\?\\UNC\\" + path[2:]
+    else:
+        path = "\\\\?\\" + path 
+    return path  
 
 def datetime_to_millis(dateTime):
     return dateTime.timestamp() * 1000
@@ -193,6 +187,8 @@ ap.add_argument('-i', '--indicator', required = False, action='store_true',
    help = 'Specify this flag to include indicator data in the export.')
 ap.add_argument('-b', '--burst', required = False, action='store_true',
    help = 'Specify this flag to include burst data in the export.')
+ap.add_argument('-g', '--groupId', required = True,
+   help = 'The Group ID containing the data to be exported.')
 args = vars(ap.parse_args())
 if not args['burst'] and not args['indicator']:
     ap.error('You must specify at least one type of export (i.e. burst or indicator).')
@@ -202,6 +198,7 @@ startMillis = datetime_string_to_millis(args['start'])
 endMillis = datetime_to_millis(datetime.utcnow())
 includeIndicator = args['indicator']
 includeBurst = args['burst']
+groupId = args['groupId']
 
 if args['end'] is not None:
     endMillis = datetime_string_to_millis(args['end'])
@@ -210,6 +207,6 @@ if args['end'] is not None:
 localDataExportFolderPath = '.'
 
 if includeIndicator:
-    export_indicator_data(startMillis, endMillis, apiKey, localDataExportFolderPath)
+    export_group_indicator_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)
 if includeBurst:
-    export_burst_data(startMillis, endMillis, apiKey, localDataExportFolderPath)
+    export_group_burst_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)

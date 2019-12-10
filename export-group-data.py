@@ -1,6 +1,7 @@
-# Sample code for exporting indicator data and burst data from SmartDiagnostics.
+# Sample code for exporting a group's indicator data and burst data from SmartDiagnostics.
 
 from urllib import request
+from urllib.request import HTTPError
 from datetime import datetime
 from pathlib import Path
 import json
@@ -143,13 +144,13 @@ def handle_export_result(exportStatusResult, localExportFilePath):
     if 'downloadUrl' in exportStatusResult:
         # Download the export file to the local exportFilePath.
         request.urlretrieve(exportStatusResult['downloadUrl'], localExportFilePath)
-        print(f'Export file downloaded to {localExportFilePath}')
+        print(f'** Export file downloaded to {localExportFilePath} **')
     else:
         exportErrorText = exportStatusResult["error"]
         if exportErrorText == 'No data to export.':
-            print(f'The export completed with an empty data set. No file was downloaded.')
+            print(f'** The export completed with an empty data set. No file was downloaded. **')
         else:
-            print(f'Something went wrong with the export: "{exportStatusResult["error"]}"')
+            print(f'** Something went wrong with the export: "{exportStatusResult["error"]}" **')
 
 def winapi_path(dos_path, encoding = None):
     path = os.path.abspath(dos_path)
@@ -207,6 +208,22 @@ if args['end'] is not None:
 localDataExportFolderPath = '.'
 
 if includeIndicator:
-    export_group_indicator_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)
+    try:
+       export_group_indicator_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)
+    except HTTPError as err:
+       if err.code == 401:
+           print(f'** The specified API key is invalid. **')
+       elif err.code == 404:
+           print(f'** No group burst data exists for the specified time frame. **')
+       else:
+           raise
 if includeBurst:
-    export_group_burst_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)
+    try:
+       export_group_burst_data(groupId, startMillis, endMillis, apiKey, localDataExportFolderPath)
+    except HTTPError as err:
+       if err.code == 401:
+           print(f'** The specified API key is invalid. **')
+       elif err.code == 404:
+           print(f'** No group burst data exists for the specified time frame. **')
+       else:
+           raise

@@ -14,8 +14,12 @@ To represent the resultant UTC date/time of November 10, 2019 @ 20:00, use the f
 
 ##### Export group indicator data that occurred between November 19, 2019 @12am and November 21, 2019 @8:30am:
 
-<pre><code>python export-group-data.py --apikey YOUR_API_KEY --start "2019-11-19 00:00:00" --end "2019-11-21 08:30:00" --groupId GROUP_ID_TO_EXPORT --indicator</code></pre>
+<pre><code>python export-group-data.py --apikey ACCOUNT_API_KEY --start "2019-11-19 00:00:00" --end "2019-11-21 08:30:00" --groupId GROUP_ID_TO_EXPORT --indicator</code></pre>
 
-##### Export group indicator and burst data that occurred between November 19, 2019 @12am and November 21, 2019 @8:30am:
+##### Export group indicator and group burst data that occurred between November 19, 2019 @12am and November 21, 2019 @8:30am:
 
-<pre><code>python export-group-data.py --apikey YOUR_API_KEY --start "2019-11-19 00:00:00" --end "2019-11-21 08:30:00" --groupId GROUP_ID_TO_EXPORT --indicator --burst</code></pre>
+<pre><code>python export-group-data.py --apikey ACCOUNT_API_KEY --start "2019-11-19 00:00:00" --end "2019-11-21 08:30:00" --groupId GROUP_ID_TO_EXPORT --indicator --burst</code></pre>
+
+##### Export all account indicator and account burst data that occurred between November 19, 2019 @12am and November 21, 2019 @8:30am:
+
+<pre><code>python export-account-data.py --apikey ACCOUNT_API_KEY --start "2019-11-19 00:00:00" --end "2019-11-21 08:30:00" --burst --indicator</pre></code>

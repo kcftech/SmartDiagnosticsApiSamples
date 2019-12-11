@@ -33,7 +33,7 @@ Code samples and documentation for the SmartDiagnostics® API. Additional API do
 
 <br/>
 
-### Example Usages
+### Example Usages (Remember to replace ACCOUNT_API_KEY and GROUP_ID_TO_EXPORT with appropriate values):
 
 ##### Export group indicator data that occurred between November 19, 2019 @12am and November 21, 2019 @8:30am:
 

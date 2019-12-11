@@ -29,7 +29,7 @@ Code samples and documentation for the SmartDiagnostics® API. Additional API do
 
 <pre><code>cd C:\Users\myusername\Downloads\SmartDiagnosticsApiSamples-master</pre></code>
 
-3) Run the desired export command (refer to the Example Usages section below for details on how to run the exports).
+3) Run the desired export command (refer to the **Example Usages** section below for details on how to run the exports).
 
 <br/>
 
@@ -57,4 +57,4 @@ The following example illustrates how to use this tool to convert November 10, 2
 
 ![Time zone conversion](https://github.com/KCFTech/SmartDiagnosticsApiSamples/blob/master/images/time_zone_conversion.png)
 
-To represent the resultant UTC date/time of November 10, 2019 @ 20:00, use the following value when running the python scripts: "2019-11-10 20:00:00".
+To represent the resultant UTC date/time of November 10, 2019 @ 20:00, use the following value when running the python scripts: **"2019-11-10 20:00:00"**.
